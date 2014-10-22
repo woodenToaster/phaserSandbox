@@ -3,6 +3,8 @@ var mainState = {
 		game.load.image('player', 'assets/player.png');
 		game.load.image('wallV', 'assets/wallVertical.png');
 		game.load.image('wallH', 'assets/wallHorizontal.png');
+		game.load.image('coin', 'assets/coin.png');
+		game.load.image('enemy', 'assets/enemy.png');
 	},
 
 	create: function() {
@@ -14,6 +16,17 @@ var mainState = {
 		this.player.body.gravity.y = 500;
 		this.cursor = game.input.keyboard.createCursorKeys();
 		this.createWorld();
+		this.coin = game.add.sprite(60, 140, 'coin');
+		game.physics.arcade.enable(this.coin);
+		this.coin.anchor.setTo(0.5, 0.5);
+		this.scoreLabel = game.add.text(30, 30, 'score: 0', 
+			{font: '18px Arial', fill: '#ffffff'}
+		);
+		this.score = 0;
+		this.enemies = game.add.group();
+		this.enemies.enableBody = true;
+		this.enemies.createMultiple(10, 'enemy');
+		game.time.events.loop(2200, this.addEnemy, this);
 	},
 
 	update: function() {
@@ -22,6 +35,9 @@ var mainState = {
 		if(!this.player.inWorld) {
 			this.playerDie();
 		}
+		game.physics.arcade.overlap(this.player, this.coin, this.takeCoin, null, this);
+		game.physics.arcade.collide(this.enemies, this.walls);
+		game.physics.arcade.overlap(this.player, this.enemies, this.playerDie, null, this);
 	},
 
 	movePlayer: function() {
@@ -62,6 +78,44 @@ var mainState = {
 
 	playerDie: function() {
 		game.state.start('main');
+	},
+
+	takeCoin: function() {
+		this.score += 5;
+		this.scoreLabel.text = 'score: ' + this.score;
+		this.updateCoinPosition();
+	},
+
+	updateCoinPosition: function() {
+		var coinPosition = [
+			{x: 140, y: 60}, {x: 360, y: 60},
+			{x: 60,y: 140}, {x: 440,y: 140},
+			{x: 130, y: 300}, {x: 370, y: 300}
+		];
+
+		for(var i = 0; i < coinPosition.length; i++) {
+			if(coinPosition[i].x === this.coin.x) {
+				coinPosition.splice(i, 1);
+			}
+		}
+
+		var newPosition = coinPosition[game.rnd.integerInRange(0, coinPosition.length - 1)];
+		this.coin.reset(newPosition.x, newPosition.y);
+	},
+
+	addEnemy: function() {
+		var enemy = this.enemies.getFirstDead();
+		if(!enemy) {
+			return;
+		}
+
+		enemy.anchor.setTo(0.5, 1);
+		enemy.reset(game.world.centerX, 0);
+		enemy.body.gravity.y = 500;
+		enemy.body.velocity.x = 100 * Phaser.Math.randomSign();
+		enemy.body.bounce.x = 1;
+		enemy.checkWorldBounds = true;
+		enemy.outOfBoundsKill = true;
 	}
 
 };
