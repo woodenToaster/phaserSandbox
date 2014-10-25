@@ -181,6 +181,7 @@ var playState = {
   },
 
   openScriptPane: function() {
+  	//$('#scriptingPane').modal();
   	this.pane.alpha = 1;
   	this.pane.bringToTop();
   	this.darken.inputEnabled = true;
@@ -197,7 +198,6 @@ var playState = {
   		enemy.inputEnabled = false;
   	}, this);
 
-  	
   	this.player.inputEnabled = false;
   	this.coin.inputEnabled = false;
   	this.scriptingEnabled = false;

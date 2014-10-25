@@ -21,6 +21,14 @@
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="HandheldFriendly" content="true" />
 
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+		<!-- Bootstrap JavaScript -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
 		<script type="text/javascript" src="phaser.min.js"></script>
 		<script type="text/javascript" src="js/boot.js"></script>
 		<script type="text/javascript" src="js/load.js"></script>
@@ -31,6 +39,33 @@
 	</head>
 	<body>
 		<div id="gameDiv"> </div>
+		<div class="modal fade" id="scriptingPane">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+		        <h4 class="modal-title">Enter Script</h4>
+		      </div>
+		      <div class="modal-body">
+		        <form id="scriptForm" method="post" class="form-horizontal">
+		        	<div class="form-group">
+		        		<label class="col-sm-3 control-label">Script Body</label>
+		        		<div class="col-sm-5">
+		        			<input type="text" class="form-control" name="scriptBody" />
+		        	</div>
+		        	<div class="form-group">
+		        		<div class="col-sm-5 col-sm-offset-3">
+                  <button type="submit" class="btn btn-default">Submit</button>
+		        	</div>
+		        </form>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+		        <button type="button" class="btn btn-primary">Save changes</button>
+		      </div>
+		    </div><!-- /.modal-content -->
+		  </div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
 		<p class="hiddenText"> . </p>
 	</body>
 </html>
