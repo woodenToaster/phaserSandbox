@@ -195,7 +195,7 @@ var playState = {
   },
 
   jumpPlayer: function() {
-  	if(this.player.body.onfloor()) {
+  	if(this.player.body.onFloor()) {
   		this.player.body.velocity.y = -320;
   		this.jumpSound.play();
   	}
