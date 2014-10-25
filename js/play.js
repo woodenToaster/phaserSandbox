@@ -4,7 +4,8 @@ var playState = {
 		//Register input keys
 		this.cursor = game.input.keyboard.createCursorKeys();
 		this.space = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-		this.space.onDown.add(this.scriptingMenu, this);
+		this.space.onDown.add(this.pauseMenu, this);
+		this.lbutton = game.input.mouse.add
 
 		//Rectangle to darken game screen when scripting pane is open
 		this.darkenData = game.add.bitmapData(500, 340);
@@ -16,7 +17,6 @@ var playState = {
   	this.darken.anchor.setTo(0.5, 0.5);
   	this.darken.alpha = 0;
   	
-
 		this.player = game.add.sprite(game.world.centerX, game.world.centerY, 'player');
 		this.player.anchor.setTo(0.5, 0.5);
 		game.physics.arcade.enable(this.player);
@@ -79,7 +79,6 @@ var playState = {
 
 	update: function() {
 		
-		
 			game.physics.arcade.collide(this.player, this.layer);
 			game.physics.arcade.collide(this.enemies, this.layer);
 			game.physics.arcade.overlap(this.player, this.coin, this.takeCoin, null, this);
@@ -102,7 +101,16 @@ var playState = {
 		    	this.addEnemy();
 		    	this.nextEnemy = game.time.now + delay;
 		    }
+		  } else {
+		  	/*
+		  	this.enableScripting();
+		  	while(this.paused) {
+		  		this.checkScriptingInput();
+		  	}
+		  	this.disableScripting();
+		  	*/
 		  }
+
   },
 
 	movePlayer: function() {
@@ -126,17 +134,14 @@ var playState = {
 		if (this.cursor.up.isDown || this.wasd.up.isDown) {
 			this.jumpPlayer();
 	  }
-	  
   },
 
-  scriptingMenu: function() {
+  pauseMenu: function() {
   	
 	  if (!this.paused) {
 	  	this.paused = true;
 	  	this.freezeEnemies();
 	  	this.freezePlayer(this.player.body.velocity.y);
-	  	
-	  	//Darken screen
 	  	this.darken.alpha = 0.5;
 	  } else {
 	  	this.paused = false;
@@ -145,6 +150,31 @@ var playState = {
 	  	this.darken.alpha = 0;
 	  	this.darken.bringToTop();
 	  }
+  },
+
+  /*
+  enableScripting: function() {
+  	//Enable input events on sprites
+  	this.enemies.forEachAlive(function(enemy){
+  		enemy.inputEnabled = true;
+  		enemy.events.onInputDown.add(this.openScriptPane, this);
+  	}, this);
+
+  	this.player.inputEnabled = true;
+  	this.player.onInputDown.add(this.openScriptPane, this);
+
+  	this.coin.inputEnabled = true;
+  	this.coin.onInputDown.add(this.openScriptPane, this);
+  },
+	*/
+
+  disableScripting: function() {
+  	this.enemies.forEachAlive(function(enemy){
+  		enemy.inputEnabled = false;
+  	}, this);
+
+  	this.player.inputEnabled = false;
+  	this.coin.inputEnabled = false;
   },
 
   freezePlayer: function(yVel) {
