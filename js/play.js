@@ -1,7 +1,22 @@
 var playState = {
 
 	create: function() {
+		//Register input keys
 		this.cursor = game.input.keyboard.createCursorKeys();
+		this.space = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+		this.space.onDown.add(this.scriptingMenu, this);
+
+		//Rectangle to darken game screen when scripting pane is open
+		this.darkenData = game.add.bitmapData(500, 340);
+		this.darkenData.ctx.beginPath();
+  	this.darkenData.ctx.rect(0, 0, 500, 340);
+  	this.darkenData.ctx.fillStyle = '#000000';
+  	this.darkenData.ctx.fill();
+  	this.darken = game.add.sprite(game.world.centerX, game.world.centerY, this.darkenData);
+  	this.darken.anchor.setTo(0.5, 0.5);
+  	this.darken.alpha = 0;
+  	
+
 		this.player = game.add.sprite(game.world.centerX, game.world.centerY, 'player');
 		this.player.anchor.setTo(0.5, 0.5);
 		game.physics.arcade.enable(this.player);
@@ -20,6 +35,7 @@ var playState = {
 		this.createWorld();
 		
 		this.nextEnemy = 0;
+		this.paused = false;
 
 		//Add sounds
 		this.jumpSound = game.add.audio('jump');
@@ -42,7 +58,8 @@ var playState = {
 			Phaser.Keyboard.UP, 
 			Phaser.Keyboard.DOWN,
 			Phaser.Keyboard.LEFT,
-			Phaser.Keyboard.RIGHT
+			Phaser.Keyboard.RIGHT,
+			Phaser.Keyboard.SPACEBAR
 		]);
 
 		//Use WASD to move
@@ -52,33 +69,40 @@ var playState = {
 			right: game.input.keyboard.addKey(Phaser.Keyboard.D)
 		};
 
+
 		if(!game.device.desktop) {
-			this.addMobileInputs();
+			this.addMobileInputs(); 
 		}
 
+		this.darken.bringToTop();
 	},
 
 	update: function() {
-		game.physics.arcade.collide(this.player, this.layer);
-		game.physics.arcade.collide(this.enemies, this.layer);
-		game.physics.arcade.overlap(this.player, this.coin, this.takeCoin, null, this);
-		game.physics.arcade.overlap(this.player, this.enemies, this.playerDie, null, this);
-		this.movePlayer();
-		if (!this.player.inWorld) {
-			this.playerDie();
-    }
+		
+		
+			game.physics.arcade.collide(this.player, this.layer);
+			game.physics.arcade.collide(this.enemies, this.layer);
+			game.physics.arcade.overlap(this.player, this.coin, this.takeCoin, null, this);
+			game.physics.arcade.overlap(this.player, this.enemies, this.playerDie, null, this);
+			
+			if(!this.paused) {
+				this.movePlayer();
+				if (!this.player.inWorld) {
+					this.playerDie();
+		    }
 
-    if(this.nextEnemy < game.time.now) {
-    	
-    	var start = 4000;
-    	var end = 1000;
-    	var score = 100;
+		    if(this.nextEnemy < game.time.now) {
+		    	
+		    	var start = 4000;
+		    	var end = 1000;
+		    	var score = 100;
 
-    	var delay = Math.max(start - (start - end) * game.global.score / score, end);
+		    	var delay = Math.max(start - (start - end) * game.global.score / score, end);
 
-    	this.addEnemy();
-    	this.nextEnemy = game.time.now + delay;
-    }
+		    	this.addEnemy();
+		    	this.nextEnemy = game.time.now + delay;
+		    }
+		  }
   },
 
 	movePlayer: function() {
@@ -98,9 +122,64 @@ var playState = {
 			this.player.animations.stop();
 			this.player.frame = 0;
 	  }
+	  //Jump
 		if (this.cursor.up.isDown || this.wasd.up.isDown) {
 			this.jumpPlayer();
 	  }
+	  
+  },
+
+  scriptingMenu: function() {
+  	
+	  if (!this.paused) {
+	  	this.paused = true;
+	  	this.freezeEnemies();
+	  	this.freezePlayer(this.player.body.velocity.y);
+	  	
+	  	//Darken screen
+	  	this.darken.alpha = 0.5;
+	  } else {
+	  	this.paused = false;
+	  	this.unfreezeEnemies();
+	  	this.unfreezePlayer();
+	  	this.darken.alpha = 0;
+	  	this.darken.bringToTop();
+	  }
+  },
+
+  freezePlayer: function(yVel) {
+  	this.playerVelY = yVel;
+  	this.player.body.velocity.x = 0;
+  	this.player.body.velocity.y = 0;
+  	this.player.body.gravity.y = 0;
+	  this.player.animations.stop();
+  },
+
+  unfreezePlayer: function() {
+  	this.player.body.velocity.y = this.playerVelY;
+  	this.player.body.gravity.y = 500;
+  },
+
+  freezeEnemies: function() {
+  	this.enemies.forEachAlive(function(enemy){
+  		enemy.body.gravity.y = 0;
+  		enemy.Yvel = enemy.body.velocity.y;
+  		enemy.body.velocity.y = 0;
+  		enemy.direction = enemy.body.velocity.x > 0 ? 'right' : 'left';
+  		enemy.body.velocity.x = 0;
+  	}, this);
+  },
+
+  unfreezeEnemies: function() {
+  	this.enemies.forEachAlive(function(enemy){
+  		enemy.body.gravity.y = 500;
+  		enemy.body.velocity.y = enemy.Yvel;
+  	  if(enemy.direction == 'right') {
+  	  	enemy.body.velocity.x = 100;
+  	  } else {
+  	  	enemy.body.velocity.x = -100;
+  	  }
+  	}, this);
   },
 
 	takeCoin: function(player, coin) {
@@ -196,8 +275,9 @@ var playState = {
 
   jumpPlayer: function() {
   	if(this.player.body.onFloor()) {
-  		this.player.body.velocity.y = -320;
   		this.jumpSound.play();
+  		this.player.body.velocity.y = -320;
+  		
   	}
   },
 
