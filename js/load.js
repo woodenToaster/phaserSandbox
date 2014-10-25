@@ -29,7 +29,6 @@ var loadState = {
 		game.load.audio('coin', ['assets/coin.ogg', 'assets/coin.mp3']);
 		game.load.audio('dead', ['assets/dead.ogg', 'assets/dead.mp3']);
 
-		game.load.script('gray', 'filters/gray.js');
 	},
 
 	create: function() {

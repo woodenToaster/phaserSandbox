@@ -17,6 +17,19 @@ var playState = {
   	this.darken.anchor.setTo(0.5, 0.5);
   	this.darken.alpha = 0;
   	
+  	//Scripting enabled flag
+  	this.scriptingEnabled = false;
+
+  	//Scripting Pane
+  	this.scriptingPane = game.add.bitmapData(250, 170);
+  	this.scriptingPane.ctx.beginPath();
+  	this.scriptingPane.ctx.rect(0, 0, 250, 170);
+  	this.scriptingPane.ctx.fillStyle = '#FFFFFF';
+  	this.scriptingPane.ctx.fill();
+  	this.pane = game.add.sprite(game.world.centerX, game.world.centerY, this.scriptingPane);
+  	this.pane.anchor.setTo(0.5, 0.5);
+  	this.pane.alpha = 0;
+
 		this.player = game.add.sprite(game.world.centerX, game.world.centerY, 'player');
 		this.player.anchor.setTo(0.5, 0.5);
 		game.physics.arcade.enable(this.player);
@@ -85,6 +98,10 @@ var playState = {
 			game.physics.arcade.overlap(this.player, this.enemies, this.playerDie, null, this);
 			
 			if(!this.paused) {
+				if(this.scriptingEnabled == true) {
+					this.disableScripting();
+				}
+
 				this.movePlayer();
 				if (!this.player.inWorld) {
 					this.playerDie();
@@ -102,15 +119,8 @@ var playState = {
 		    	this.nextEnemy = game.time.now + delay;
 		    }
 		  } else {
-		  	/*
 		  	this.enableScripting();
-		  	while(this.paused) {
-		  		this.checkScriptingInput();
-		  	}
-		  	this.disableScripting();
-		  	*/
 		  }
-
   },
 
 	movePlayer: function() {
@@ -152,7 +162,7 @@ var playState = {
 	  }
   },
 
-  /*
+  
   enableScripting: function() {
   	//Enable input events on sprites
   	this.enemies.forEachAlive(function(enemy){
@@ -161,20 +171,36 @@ var playState = {
   	}, this);
 
   	this.player.inputEnabled = true;
-  	this.player.onInputDown.add(this.openScriptPane, this);
+  	this.player.events.onInputDown.add(this.openScriptPane, this);
+
+  	
 
   	this.coin.inputEnabled = true;
-  	this.coin.onInputDown.add(this.openScriptPane, this);
+  	this.coin.events.onInputDown.add(this.openScriptPane, this);
+  	this.scriptingEnabled = true;
   },
-	*/
 
+  openScriptPane: function() {
+  	this.pane.alpha = 1;
+  	this.pane.bringToTop();
+  	this.darken.inputEnabled = true;
+  	this.darken.events.onInputDown.add(this.dismissScriptPane, this);
+  },
+
+  dismissScriptPane: function() {
+  	this.darken.inputEnabled = false;
+  	this.pane.alpha = 0;
+  },
+	
   disableScripting: function() {
   	this.enemies.forEachAlive(function(enemy){
   		enemy.inputEnabled = false;
   	}, this);
 
+  	
   	this.player.inputEnabled = false;
   	this.coin.inputEnabled = false;
+  	this.scriptingEnabled = false;
   },
 
   freezePlayer: function(yVel) {
