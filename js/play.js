@@ -18,41 +18,99 @@ var playState = {
 		);
 		game.global.score = 0;
 		this.createWorld();
-		game.time.events.loop(2200, this.addEnemy, this);
+		
+		this.nextEnemy = 0;
+
+		//Add sounds
+		this.jumpSound = game.add.audio('jump');
+		this.coinSound = game.add.audio('coin');
+		this.deadSound = game.add.audio('dead');
+
+		//Add Animations
+		this.player.animations.add('right', [1, 2], 8, true);
+		this.player.animations.add('left', [3, 4], 8, true);
+
+		//Set up emitter
+		this.emitter = game.add.emitter(0, 0, 15);
+		this.emitter.makeParticles('pixel');
+		this.emitter.setYSpeed(-150, 150);
+		this.emitter.setXSpeed(-150, 150);
+		this.emitter.gravity = 0;
+
+		//Keep keyboard input from being sent to the browser
+		game.input.keyboard.addKeyCapture([
+			Phaser.Keyboard.UP, 
+			Phaser.Keyboard.DOWN,
+			Phaser.Keyboard.LEFT,
+			Phaser.Keyboard.RIGHT
+		]);
+
+		//Use WASD to move
+		this.wasd = {
+			up: game.input.keyboard.addKey(Phaser.Keyboard.W),
+			left: game.input.keyboard.addKey(Phaser.Keyboard.A),
+			right: game.input.keyboard.addKey(Phaser.Keyboard.D)
+		};
+
+		if(!game.device.desktop) {
+			this.addMobileInputs();
+		}
+
 	},
 
 	update: function() {
-		game.physics.arcade.collide(this.player, this.walls);
-		game.physics.arcade.collide(this.enemies, this.walls);
-		game.physics.arcade.overlap(this.player, this.coin, this.takeCoin,
-		null, this);
-		game.physics.arcade.overlap(this.player, this.enemies, this.playerDie,
-		null, this);
+		game.physics.arcade.collide(this.player, this.layer);
+		game.physics.arcade.collide(this.enemies, this.layer);
+		game.physics.arcade.overlap(this.player, this.coin, this.takeCoin, null, this);
+		game.physics.arcade.overlap(this.player, this.enemies, this.playerDie, null, this);
 		this.movePlayer();
 		if (!this.player.inWorld) {
-		this.playerDie();
+			this.playerDie();
+    }
+
+    if(this.nextEnemy < game.time.now) {
+    	
+    	var start = 4000;
+    	var end = 1000;
+    	var score = 100;
+
+    	var delay = Math.max(start - (start - end) * game.global.score / score, end);
+
+    	this.addEnemy();
+    	this.nextEnemy = game.time.now + delay;
     }
   },
 
 	movePlayer: function() {
-		if (this.cursor.left.isDown) {
+		//Move left
+		if (this.cursor.left.isDown || this.wasd.left.isDown || this.moveLeft) {
 			this.player.body.velocity.x = -200;
+			this.player.animations.play('left');
 	  }
-		else if (this.cursor.right.isDown) {
+	  //Move right
+		else if (this.cursor.right.isDown || this.wasd.right.isDown || this.moveRight) {
 			this.player.body.velocity.x = 200;
+			this.player.animations.play('right');
 	  }
+	  //Stop
 	  else {
 			this.player.body.velocity.x = 0;
+			this.player.animations.stop();
+			this.player.frame = 0;
 	  }
-		if (this.cursor.up.isDown && this.player.body.touching.down) {
-			this.player.body.velocity.y = -320;
+		if (this.cursor.up.isDown || this.wasd.up.isDown) {
+			this.jumpPlayer();
 	  }
   },
 
 	takeCoin: function(player, coin) {
+		this.coinSound.play();
 		game.global.score += 5;
 		this.scoreLabel.text = 'score: ' + game.global.score;
 		this.updateCoinPosition();
+		this.coin.scale.setTo(0, 0);
+		game.add.tween(this.coin.scale).to({x: 1, y: 1}, 300).start();
+		game.add.tween(this.player.scale).to({x: 1.3, y: 1.3}, 50).to({x: 1, y: 1}, 150).start();
   },
 	
 	updateCoinPosition: function() {
@@ -87,25 +145,63 @@ var playState = {
 	},
 
 	createWorld: function() {
-		this.walls = game.add.group();
-		this.walls.enableBody = true;
-		game.add.sprite(0, 0, 'wallV', 0, this.walls);
-		game.add.sprite(480, 0, 'wallV', 0, this.walls);
-		game.add.sprite(0, 0, 'wallH', 0, this.walls);
-		game.add.sprite(300, 0, 'wallH', 0, this.walls);
-		game.add.sprite(0, 320, 'wallH', 0, this.walls);
-		game.add.sprite(300, 320, 'wallH', 0, this.walls);
-		game.add.sprite(-100, 160, 'wallH', 0, this.walls);
-		game.add.sprite(400, 160, 'wallH', 0, this.walls);
-		
-		var middleTop = game.add.sprite(100, 80, 'wallH', 0, this.walls);
-		middleTop.scale.setTo(1.5, 1);
-		var middleBottom = game.add.sprite(100, 240, 'wallH', 0, this.walls);
-		middleBottom.scale.setTo(1.5, 1);
-		this.walls.setAll('body.immovable', true);
+		this.map = game.add.tilemap('map');
+		this.map.addTilesetImage('tileset');
+		this.layer = this.map.createLayer('Tile Layer 1');
+		this.layer.resizeWorld();
+		this.map.setCollision(1);
 	},
 
   playerDie: function() {
-		game.state.start('menu');
+		
+		if(!this.player.alive) {
+			return;
+		}
+
+		this.deadSound.play();
+		this.player.kill();
+		this.emitter.x = this.player.x;
+		this.emitter.y = this.player.y;
+		this.emitter.start(true, 600, null, 15);
+		game.time.events.add(1000, this.startMenu, this);
+  },
+
+  addMobileInputs: function() {
+  	this.jumpButton = game.add.sprite(350, 247, 'jumpButton');
+  	this.jumpButton.inputEnabled = true;
+  	this.jumpButton.events.onInputDown.add(this.jumpPlayer, this);
+  	this.jumpButton.alpha = 0.5;
+
+  	this.moveLeft = false;
+  	this.moveRight = false;
+
+  	this.leftButton = game.add.sprite(50, 247, 'leftButton');
+  	this.leftButton.inputEnabled = true;
+  	this.leftButton.events.onInputOver.add(function(){this.moveLeft=true;}, this);
+		this.leftButton.events.onInputOut.add(function(){this.moveLeft=false;}, this);
+		this.leftButton.events.onInputDown.add(function(){this.moveLeft=true;}, this);
+		this.leftButton.events.onInputUp.add(function(){this.moveLeft=false;}, this);
+  	this.leftButton.alpha = 0.5;
+
+  	this.rightButton = game.add.sprite(130, 247, 'rightButton');
+  	this.rightButton.inputEnabled = true;
+  	this.leftButton.events.onInputOver.add(function(){this.moveRight=true;}, this);
+		this.leftButton.events.onInputOut.add(function(){this.moveRight=false;}, this);
+		this.leftButton.events.onInputDown.add(function(){this.moveRight=true;}, this);
+		this.leftButton.events.onInputUp.add(function(){this.moveRight=false;}, this);
+  	this.rightButton.alpha = 0.5;
+
+  	
+  },
+
+  jumpPlayer: function() {
+  	if(this.player.body.onfloor()) {
+  		this.player.body.velocity.y = -320;
+  		this.jumpSound.play();
+  	}
+  },
+
+  startMenu: function() {
+  	game.state.start('menu');
   }
 };
